@@ -29,7 +29,7 @@ Then from the root of the repo we can setup up each environment:
 ```sh
 terraform -chdir=deployments/dev init
 terraform -chdir=deployments/dev plan
-terraform -chdir=deployments/dev apply
+terraform -chdir=deployments/dev apply -auto-approve
 ```
 
 ### UAT
@@ -37,7 +37,7 @@ terraform -chdir=deployments/dev apply
 ```sh
 terraform -chdir=deployments/uat init
 terraform -chdir=deployments/uat plan
-terraform -chdir=deployments/uat apply
+terraform -chdir=deployments/uat apply -auto-approve
 ```
 
 ### PRD
@@ -45,5 +45,5 @@ terraform -chdir=deployments/uat apply
 ```sh
 terraform -chdir=deployments/prd init
 terraform -chdir=deployments/prd plan
-terraform -chdir=deployments/prd apply
+terraform -chdir=deployments/prd apply -auto-approve
 ```

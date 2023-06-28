@@ -23,7 +23,6 @@ variable "aws_region" {
 variable "environment" {
   description = "Deployment Environment AWS Account. dev/uat/prd"
   type        = string
-  default     = "dev"
   nullable    = false
   validation {
     condition     = contains(["dev", "uat", "prd"], var.environment)
