@@ -4,6 +4,28 @@ This terraform module will bootstrap setting up and RDS PostgreSQL instance in
 a target AWS account using a local backend initially. We will then transfer
 state management to the RDS instance using the [`pg`](https://developer.hashicorp.com/terraform/language/settings/backends/pg) backend.
 
+## Structure
+
+```
+.
+├── deployments
+│   ├── dev
+│   │   ├── main.tf
+│   │   └── variables.tf
+│   ├── prd
+│   │   ├── main.tf
+│   │   └── variables.tf
+│   └── uat
+│       ├── main.tf
+│       └── variables.tf
+├── modules
+│   └── state_backend_rds
+│       ├── main.tf
+│       ├── outputs.tf
+│       └── variables.tf
+└── terraform.tfvars.example
+```
+
 ## Quickstart
 
 You will want to copy `terraform.tfvars.example` into each of:
