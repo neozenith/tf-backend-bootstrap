@@ -1,0 +1,11 @@
+# Credentials or sensitive bootstrap scripts
+.env
+setup.sh
+
+# Terraform
+*.tfvars
+.terraform/*
+.terraform.lock.hcl
+*.tfstate*
+**/*/.terraform/*
+**/*.tfstate*

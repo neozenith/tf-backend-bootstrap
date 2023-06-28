@@ -1,0 +1,4 @@
+environment = "dev"
+aws_profile = "joshpeak-dev"
+team = "personal"
+project = "tf-backend-bootstrap"
