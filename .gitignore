@@ -9,3 +9,6 @@ setup.sh
 *.tfstate*
 **/*/.terraform/*
 **/*.tfstate*
+
+#Python
+.venv
