@@ -5,6 +5,14 @@ a target AWS account using a local backend initially. We will then transfer
 state management to the RDS instance using the [`pg`](https://developer.hashicorp.com/terraform/language/settings/backends/pg) backend.
 
 <!--TOC-->
+
+- [Terraform State Backend - RDS PostgreSQL](#terraform-state-backend---rds-postgresql)
+  - [Structure](#structure)
+  - [Achitecture Diagram](#achitecture-diagram)
+  - [Quickstart](#quickstart)
+    - [Setup the tfvars](#setup-the-tfvars)
+    - [Python Scripts](#python-scripts)
+
 <!--TOC-->
 
 ## Structure
@@ -37,6 +45,10 @@ state management to the RDS instance using the [`pg`](https://developer.hashicor
 ├── tasks.py
 └── terraform.tfvars.example
 ```
+
+## Achitecture Diagram
+
+![Achitecture Diagram](graph.png)
 
 ## Quickstart
 

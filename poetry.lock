@@ -608,6 +608,17 @@ flake8 = ">=3"
 pydocstyle = ">=2.1"
 
 [[package]]
+name = "fpyutils"
+version = "3.0.1"
+description = "A collection of useful non-standard Python functions which aim to be simple to use, highly readable but not efficient."
+optional = false
+python-versions = "<4,>=3.5"
+files = [
+    {file = "fpyutils-3.0.1-py3-none-any.whl", hash = "sha256:30ac10a97db2f321d479b75a67989ee528254fd2e1038494053784e9d9fd72b8"},
+    {file = "fpyutils-3.0.1.tar.gz", hash = "sha256:d98828d925075d7a2386dd03ed0895e6631c31e00513509e30aa85aa0150cc11"},
+]
+
+[[package]]
 name = "html5lib"
 version = "1.1"
 description = "HTML parser based on the WHATWG HTML specification"
@@ -847,6 +858,20 @@ files = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
     {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
 ]
+
+[[package]]
+name = "md-toc"
+version = "8.1.9"
+description = "Automatically generate and add an accurate table of contents to markdown files"
+optional = false
+python-versions = "<4,>=3.5"
+files = [
+    {file = "md_toc-8.1.9-py3-none-any.whl", hash = "sha256:9f11af07ba77557bf1b92763cfb9886ef15d7d57436faa8ceb386bd374a472db"},
+    {file = "md_toc-8.1.9.tar.gz", hash = "sha256:bc44bea9b1117142b61c22e8fa1a6aa1d33e046a7cb81e02064e2b40be304d51"},
+]
+
+[package.dependencies]
+fpyutils = ">=3.0.1,<4"
 
 [[package]]
 name = "more-itertools"
@@ -1715,4 +1740,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "145e31708ce5b7b309820c7ed29225a048a0cc5c0647cb1db17d1d1894fae116"
+content-hash = "37c7a29cf94d738437c0e8313d0b7cb8c4b5cdd710523167c45f679376486244"
