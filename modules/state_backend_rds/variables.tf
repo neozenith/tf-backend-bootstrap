@@ -20,6 +20,10 @@ variable "aws_region" {
   nullable    = false
 }
 
+variable "vpc" {
+  description = "Target VPC for deployment"
+}
+
 variable "environment" {
   description = "Deployment Environment AWS Account. dev/uat/prd"
   type        = string

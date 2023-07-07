@@ -1,8 +1,15 @@
 # Terraform State Backend - RDS PostgreSQL
 
-This terraform module will bootstrap setting up an RDS PostgreSQL instance in 
-a target AWS account using a local backend initially. We will then transfer
-state management to the RDS instance using the [`pg`](https://developer.hashicorp.com/terraform/language/settings/backends/pg) backend.
+This terraform project will bootstrap setting up an RDS PostgreSQL instance in 
+a target AWS account using a local backend. 
+
+We will then setup another example terraform project which will use this RDS instance as the terraform state management backend for that environment.
+
+We will deploy the same setup to 3 distinct AWS accounts each with their own isolated state management.
+
+We should also be able to cleanly teardown the whole setup.
+
+![Architecture](docs/diagrams/rds_backend.drawio.png)
 
 <!--TOC-->
 
@@ -81,17 +88,21 @@ invoke --list
 
 Available tasks:
 
-  tf            Standardised terraform command runner for multiple environment states.
-  
-  init          Initialise Terraform for the given deployment enviroment.
-  plan          Plan Terraform state change for the given deployment enviroment.
-  refresh       Refresh Terraform state for the given deployment enviroment.
-  apply         Apply Terraform state change for the given deployment enviroment.
-  destroy       Apply Terraform state change for the given deployment enviroment.
-  
-  conn-str      Generate the current connection string to the database.
-  
-  tffmt         Standardised terraform formatter for multiple environment states.
+  tf               Standardised terraform command runner for multiple environment states.
+  tffmt            Standardised terraform formatter for multiple environment states.
+
+  init             Initialise Terraform for the given deployment enviroment.
+  plan             Plan Terraform state change for the given deployment enviroment.
+  apply            Apply Terraform state change for the given deployment enviroment.
+  destroy          Apply Terraform state change for the given deployment enviroment.
+
+  conn-str         Generate the current connection string to the database.
+  create-backend   Create a backend block for the target deployment environment.
+  migrate-state    Migrate Terraform state to a new provider.
+  remove-backend   Remove a backend block for the target deployment environment.
+
+  bootstrap        Bootsrap an environment.
+  teardown         Tear down and clean up the whole project.
 ```
 
 Some example usage:
@@ -102,6 +113,7 @@ inv plan dev
 inv apply dev
 inv conn-str dev
 eval "$(inv conn-str dev)"
+inv 
 
 inv destroy
 ```

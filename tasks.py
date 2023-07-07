@@ -2,12 +2,11 @@
 import json
 import os
 from pathlib import Path
-from pprint import pprint as pp
 
 # Third Party
 import boto3
 from invoke import task
-from invoke_common_tasks import *  # noqa
+from invoke_common_tasks import ci, format, init_config, lint, typecheck  # noqa
 
 VALID_ENVS = ["dev", "uat", "prd"]
 standard_runner_kwargs = dict(pty=True, echo=True)
@@ -26,13 +25,6 @@ def tf(c, env: str, command: str):
     c.run(f"terraform -chdir=deployments/{env} {command}", **standard_runner_kwargs)
 
 
-@task
-def tffmt(c, check=False):
-    """Standardised terraform formatter for multiple environment states."""
-    check_str = "-check" if check else ""
-    c.run(f"terraform fmt -recursive -list=true {check_str}", **standard_runner_kwargs)
-
-
 def _tf_output_json(c, env: str, key: str = None):
     """Standardised terraform output for multiple environment states."""
     validate_env(env)
@@ -42,12 +34,6 @@ def _tf_output_json(c, env: str, key: str = None):
         return result_json[key]["value"]
     else:
         return result_json
-
-
-@task
-def tfj(c, env: str):
-    validate_env(env)
-    c.run(f"terraform -chdir=deployments/{env} output -json | jq .", pty=True)
 
 
 def aws_profile(c, env: str):
@@ -79,41 +65,6 @@ def apply(c, env: str):
 
 
 @task
-def refresh(c, env: str):
-    """Plan Terraform state change for the given deployment enviroment."""
-    tf(c, env, "refresh")
-
-
-@task
-def destroy(c, env: str):
-    """Apply Terraform state change for the given deployment enviroment."""
-    tf(c, env, "apply -destroy -auto-approve")
-
-
-@task
-def conn_str(c, env: str):
-    """Generate the current connection string to the database."""
-    tf_outputs = _tf_output_json(c, env)
-    host = tf_outputs["rds_backend"]["value"]["rds_hostname"]
-    user = tf_outputs["rds_backend"]["value"]["rds_username"]
-    rds_secret = tf_outputs["rds_backend"]["value"]["rds_managed_secret"][0]
-
-    # Password is managed by AWS and rotated weekly
-    # So we need to securely retrieve it and compose the current connection string
-    session = boto3.session.Session(profile_name=aws_profile(c, env))
-    client = session.client(
-        service_name="secretsmanager",
-        region_name=aws_region(c, env),
-    )
-    secret = client.get_secret_value(SecretId=rds_secret["secret_arn"])
-
-    password = json.loads(secret["SecretString"])["password"]
-    connection_string = f"postgres://{user}:{password}@{host}/terraform_backend"
-    export_statement = f"export PG_CONN_STR={connection_string}"
-    print(export_statement)
-
-
-@task
 def create_backend(c, env: str):
     """Create a backend block for the target deployment environment."""
     validate_env(env)
@@ -132,9 +83,91 @@ def remove_backend(c, env: str):
 
 
 @task
+def migrate_state(c, env: str):
+    """Migrate Terraform state to a new provider."""
+    tf(c, env, "init -migrate-state")
+
+
+@task
+def destroy(c, env: str):
+    """Apply Terraform state change for the given deployment enviroment."""
+    tf(c, env, "apply -destroy -auto-approve")
+
+
+def _get_managed_secrets(c, env: str):
+    """Get managed secretes to connect to RDS instance of target environment."""
+    # Terraform Outputs:
+    tf_outputs = _tf_output_json(c, env)
+    host = tf_outputs["rds_backend"]["value"]["rds_hostname"]
+    user = tf_outputs["rds_backend"]["value"]["rds_username"]
+    db_name = tf_outputs["rds_backend"]["value"]["rds_database_name"]
+
+    # Secrets Manager - Managed Master Password rotates weekly by default.
+    rds_secret = tf_outputs["rds_backend"]["value"]["rds_managed_secret"][0]
+
+    # Password is managed by AWS and rotated weekly
+    # So we need to securely retrieve it and compose the current connection string
+    session = boto3.session.Session(profile_name=aws_profile(c, env))
+    client = session.client(
+        service_name="secretsmanager",
+        region_name=aws_region(c, env),
+    )
+    secret = client.get_secret_value(SecretId=rds_secret["secret_arn"])
+
+    password = json.loads(secret["SecretString"])["password"]
+    return {"PGUSER": user, "PGPASSWORD": password, "PGHOST": host, "PGDATABASE": db_name}
+
+
+@task
+def conn_str(c, env: str, save_shell_script: bool = True):
+    """Generate the current connection string to the database."""
+    connection_details = _get_managed_secrets(c, env)
+
+    shell_script = f"""
+    # !!!NOTE: DO NOT USE PG_CONN_STR - The password will often not escape correctly in commandlines!!!
+    # https://www.postgresql.org/docs/current/libpq-envars.html
+    export PGUSER="{connection_details['PGUSER']}"
+    export PGHOST="{connection_details['PGHOST']}"
+    export PGPASSWORD="{connection_details['PGPASSWORD']}"
+    export PGDATABASE="{connection_details['PGDATABASE']}"
+    """
+    print(shell_script)
+    if save_shell_script:
+        path = Path(f"deployments/{env}/pgconstr.sh")
+        path.write_text(shell_script)
+
+
+@task
+def bootstrap(c, env: str):
+    """Bootsrap and environment."""
+    ...
+
+
+@task
+def teardown(c, env):
+    """Tear down and clean up the whole project."""
+    # Remove reference that the backend is `pg` so it defaults to `local` again
+    remove_backend(c, env)
+    # Migrate from `pg` to `local`
+    migrate_state(c, env)
+    # Using the state in local, now tear it down.
+    destroy(c, env)
+
+
+########################### MISCELLANEOUS ########################### # noqa
+
+
+@task
 def toc(c):
     """Automate documentation tasks."""
     c.run("md_toc --in-place github --header-levels 4 README.md")
+
+
+@task
+def tffmt(c, check=False):
+    """Standardised terraform formatter for multiple environment states."""
+    check_str = "-check" if check else ""
+    c.run(f"terraform fmt -recursive -list=true {check_str}", **standard_runner_kwargs)
 
 
 @task
@@ -146,22 +179,7 @@ def inframap(c, env: str):
     )
 
 
-@task
-def all_bootstrap(c):
-    """Destroy all resources in all environments."""
-    for env in VALID_ENVS:
-        apply(c, env)
-
-
-@task
-def all_migrate(c):
-    """Destroy all resources in all environments."""
-    for env in VALID_ENVS:
-        ...
-
-
-@task
-def all_down(c):
-    """Destroy all resources in all environments."""
-    for env in VALID_ENVS:
-        destroy(c, env)
+@task(pre=[format, toc, tffmt, lint, typecheck])
+def tidy(c):
+    """Run all quality checks."""
+    ...

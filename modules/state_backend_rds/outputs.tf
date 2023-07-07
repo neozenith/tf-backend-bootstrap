@@ -16,6 +16,12 @@ output "rds_username" {
   #   sensitive   = true
 }
 
+output "rds_database_name" {
+  description = "RDS instance database name"
+  value       = aws_db_instance.tf_rds_backend.db_name
+  #   sensitive   = true
+}
+
 output "rds_kms_key_id" {
   description = "RDS KMS Key"
   value       = aws_kms_key.tf_rds_backend.id
