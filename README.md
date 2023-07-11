@@ -135,9 +135,7 @@ inv plan dev infra-tf-state
 inv apply dev infra-tf-state
 
 # GET RDS CREDENTIALS AND MIGRATE LOCAL TO RDS
-eval "$(inv conn-str dev infra-tf-state)"
-inv create-backend dev infra-tf-state
-inv migrate-state dev infra-tf-state
+eval "$(inv conn-str dev infra-tf-state -s)"
 
 # DEPLOY OUR MANAGED INFRASTRUCTURE
 inv init dev infra-my-project
@@ -150,8 +148,6 @@ inv apply dev infra-my-project
 inv destroy dev infra-my-project
 
 # CLEAN UP RDS STATE MANAGEMENT
-inv remove-backend dev infra-tf-state
-inv migrate-state dev infra-tf-state
 inv destroy dev infra-tf-state
 ```
 
