@@ -31,6 +31,12 @@ variable "environment" {
   }
 }
 
+variable "vpc_id" {
+  description = "Optional VPC ID if wanting to target an existing VPC. If this is omitted then one will be created and it's id will be an output."
+  nullable    = true
+  default     = null
+}
+
 // TAGS
 // Required Tags
 

@@ -1,7 +1,8 @@
 # Credentials or sensitive bootstrap scripts
 .env
 setup.sh
-deployments/**/pgconstr.sh
+**/*/pgconstr*.sh
+pgconstr*.sh
 
 # Terraform
 *.tfvars

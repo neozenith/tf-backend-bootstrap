@@ -26,7 +26,7 @@ We should also be able to cleanly teardown the whole setup.
 
 ```
 .
-├── deployments
+├── infra-my-project # ======= MANAGED INFRASTRUCTURE ========
 │   ├── dev
 │   │   ├── backend.tf
 │   │   ├── main.tf
@@ -42,12 +42,33 @@ We should also be able to cleanly teardown the whole setup.
 │       ├── main.tf
 │       ├── outputs.tf
 │       └── variables.tf
-├── modules
-│   └── state_backend_rds
+├── infra-tf-state # ======= TERRAFORM STATEMANAGEMENT ========
+│   ├── dev
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   ├── prd
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   └── uat
 │       ├── main.tf
 │       ├── outputs.tf
 │       └── variables.tf
-├── poetry.lock
+├── modules # ======= REUSABLE MODULES ACROSS ENVIRONMENTS ========
+│   ├── my_project_module
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   ├── state_backend_rds
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── variables.tf
+│   │   └── vpc.tf
+│   └── vpc_jumpbox
+│       ├── main.tf
+│       ├── outputs.tf
+│       └── variables.tf
 ├── pyproject.toml
 ├── tasks.py
 └── terraform.tfvars.example
@@ -62,9 +83,9 @@ We should also be able to cleanly teardown the whole setup.
 ### Setup the tfvars
 
 You will want to copy `terraform.tfvars.example` into each of:
- - `deployments/dev/terraform.tfvars`
- - `deployments/uat/terraform.tfvars`
- - `deployments/prd/terraform.tfvars`
+ - `infra-<target>/dev/terraform.tfvars`
+ - `infra-<target>/uat/terraform.tfvars`
+ - `infra-<target>/prd/terraform.tfvars`
 
 And modify the values accordingly:
 
@@ -108,14 +129,30 @@ Available tasks:
 Some example usage:
 
 ```sh
-inv init dev
-inv plan dev
-inv apply dev
-inv conn-str dev
-eval "$(inv conn-str dev)"
-inv 
+# SETUP STATE MANAGEMENT BACKEND
+inv init dev infra-tf-state
+inv plan dev infra-tf-state
+inv apply dev infra-tf-state
 
-inv destroy
+# GET RDS CREDENTIALS AND MIGRATE LOCAL TO RDS
+eval "$(inv conn-str dev infra-tf-state)"
+inv create-backend dev infra-tf-state
+inv migrate-state dev infra-tf-state
+
+# DEPLOY OUR MANAGED INFRASTRUCTURE
+inv init dev infra-my-project
+inv plan dev infra-my-project
+inv apply dev infra-my-project
+
+##################################
+
+# CLEANUP OUR MANAGED INFRASTRUCTURE
+inv destroy dev infra-my-project
+
+# CLEAN UP RDS STATE MANAGEMENT
+inv remove-backend dev infra-tf-state
+inv migrate-state dev infra-tf-state
+inv destroy dev infra-tf-state
 ```
 
 The same applies for `dev`, `uat`, `prd`.

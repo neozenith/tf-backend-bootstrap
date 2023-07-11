@@ -20,21 +20,21 @@ variable "aws_region" {
   nullable    = false
 }
 
-
-variable "vpc_id" {
-  description = "Target VPC for deployment. Defaults to default vpc for a region if not specified."
-  nullable    = true
-  default     = null
-}
-
 variable "environment" {
   description = "Deployment Environment AWS Account. dev/uat/prd"
   type        = string
+  default     = "uat"
   nullable    = false
   validation {
     condition     = contains(["dev", "uat", "prd"], var.environment)
     error_message = "The environment must be one of 'dev', 'uat', 'prd'."
   }
+}
+
+variable "vpc_id" {
+  description = "Optional VPC ID if wanting to target an existing VPC. If this is omitted then one will be created and it's id will be an output."
+  nullable    = true
+  default     = null
 }
 
 // TAGS

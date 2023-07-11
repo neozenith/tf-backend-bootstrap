@@ -1,8 +1,13 @@
-provider "aws" {
-  region  = var.aws_region
-  profile = var.aws_profile
-}
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.7.0"
+    }
 
+  }
+}
 
 resource "aws_kms_key" "tf_rds_backend" {
   description = "tf_rds_backend KMS Key"
@@ -10,22 +15,25 @@ resource "aws_kms_key" "tf_rds_backend" {
 
 resource "aws_security_group" "rds" {
   name   = "terraform-psql-rds-backend"
-  vpc_id = var.vpc.id
+  vpc_id = var.vpc_id == null ? aws_default_vpc.default.id : var.vpc_id
 
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+}
 
-  egress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "rds_ingress" {
+  security_group_id = aws_security_group.rds.id
 
+  cidr_ipv4   = "0.0.0.0/0"
+  from_port   = 5432
+  ip_protocol = "tcp"
+  to_port     = 5432
+}
+resource "aws_vpc_security_group_egress_rule" "rds_egress" {
+  security_group_id = aws_security_group.rds.id
+
+  cidr_ipv4   = "0.0.0.0/0"
+  from_port   = 5432
+  ip_protocol = "tcp"
+  to_port     = 5432
 }
 
 resource "aws_db_instance" "tf_rds_backend" {
