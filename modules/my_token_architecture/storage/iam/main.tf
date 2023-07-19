@@ -12,6 +12,7 @@ resource "aws_iam_access_key" "access_key" {
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/s3_bucket
 data "aws_s3_bucket" "target_bucket" {
   bucket = var.s3_bucket
+  depends_on = [ var.s3_bucket ]
 }
 
 data "aws_iam_policy_document" "s3_role_policy_document" {
@@ -31,6 +32,7 @@ resource "aws_iam_policy" "s3_service_user_policy" {
   name        = "${var.instance_name}-s3-service-user-policy"
   description = "${var.instance_name} should have access to only their bucket of client data."
   policy      = data.aws_iam_policy_document.s3_role_policy_document.json
+  depends_on = [ data.aws_iam_policy_document.s3_role_policy_document ]
 }
 
 

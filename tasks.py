@@ -214,11 +214,14 @@ def tffmt(c, check=False):
 
 
 @task
-def inframap(c, env: str):
+def inframap(c, env: str, target: str):
     """Generate InfrMap architecture diagram."""
     validate_env(env)
+    target_path = Path(target) / env
+    state_file = target_path / "terraform.tfstate"
+
     c.run(
-        f"inframap generate infra-tf-state/{env}/terraform.tfstate --clean=false --connections=false | dot -Tpng > graph.png"
+        f"inframap generate {state_file} --clean=false --connections=true | dot -Tpng > graph.png"
     )
 
 

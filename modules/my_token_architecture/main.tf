@@ -33,5 +33,5 @@ module "iam" {
 
   instance_name = var.instance_name
   s3_bucket     = module.storage_s3.s3_bucket.bucket
-  depends_on    = [module.storage_s3.s3_bucket]
+  depends_on    = [module.storage_s3]
 }
