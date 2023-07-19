@@ -9,11 +9,3 @@ output "iam_access_key" {
 output "iam_role" {
   value = aws_iam_role.role
 }
-
-# output "s3_role_policy_document" {
-#   value = data.aws_iam_policy_document.s3_role_policy_document.json
-# }
-
-# output "assume_role_policy_document" {
-#   value = data.aws_iam_policy_document.assume_role_policy_document.json
-# }

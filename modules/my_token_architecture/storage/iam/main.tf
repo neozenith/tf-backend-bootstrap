@@ -11,14 +11,33 @@ resource "aws_iam_access_key" "access_key" {
 
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/s3_bucket
 data "aws_s3_bucket" "target_bucket" {
-  bucket = var.s3_bucket
-  depends_on = [ var.s3_bucket ]
+  bucket     = var.s3_bucket
+  depends_on = [var.s3_bucket]
 }
 
+# https://docs.retool.com/docs/connect-to-amazon-s3#define-the-policy
 data "aws_iam_policy_document" "s3_role_policy_document" {
   statement {
-    effect  = "Allow"
-    actions = ["s3:*"]
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket",
+      "s3:GetBucketAcl",
+      "s3:GetBucketCORS",
+      "s3:GetBucketLocation",
+      "s3:GetBucketLogging",
+      "s3:GetBucketNotification",
+      "s3:GetBucketPolicy",
+      "s3:GetBucketWebsite",
+      "s3:GetObject",
+      "s3:GetObjectAcl",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionAcl",
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionAcl",
+      "s3:PutObjectVersionTagging"
+    ]
     resources = [
       "${data.aws_s3_bucket.target_bucket.arn}",
       "${data.aws_s3_bucket.target_bucket.arn}/*"
@@ -32,7 +51,7 @@ resource "aws_iam_policy" "s3_service_user_policy" {
   name        = "${var.instance_name}-s3-service-user-policy"
   description = "${var.instance_name} should have access to only their bucket of client data."
   policy      = data.aws_iam_policy_document.s3_role_policy_document.json
-  depends_on = [ data.aws_iam_policy_document.s3_role_policy_document ]
+  depends_on  = [data.aws_iam_policy_document.s3_role_policy_document]
 }
 
 

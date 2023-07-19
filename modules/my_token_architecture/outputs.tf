@@ -15,10 +15,3 @@ output "iam_role" {
   value = module.iam.iam_role
 }
 
-# output "s3_role_policy_document" {
-#   value = module.iam.s3_role_policy_document
-# }
-
-# output "assume_role_policy_document" {
-#   value = module.iam.assume_role_policy_document
-# }

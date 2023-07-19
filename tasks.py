@@ -220,9 +220,7 @@ def inframap(c, env: str, target: str):
     target_path = Path(target) / env
     state_file = target_path / "terraform.tfstate"
 
-    c.run(
-        f"inframap generate {state_file} --clean=false --connections=true | dot -Tpng > graph.png"
-    )
+    c.run(f"inframap generate {state_file} --clean=false --connections=true | dot -Tpng > graph.png")
 
 
 @task(pre=[format, toc, tffmt, lint, typecheck])
