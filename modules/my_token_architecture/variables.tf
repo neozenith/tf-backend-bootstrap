@@ -3,17 +3,11 @@
 //
 // There are many ways to inject input variables to parameterise infrastructure definitions. Please read the terraform docs and understand them.
 
-variable "vpc_id" {
-  description = "Optional VPC ID if wanting to target an existing VPC. If this is omitted then one will be created and it's id will be an output."
-  nullable    = true
-  default     = null
+variable "instance_name" {
+  description = "Instance name to assist configuring which client instance this deployment of this module belongs to"
+  nullable = false
+  type = string
 }
-
-variable "instance_name_list" {
-  default = []
-  type = list
-}
-
 
 variable "instance_url" {
   description = "Instance URL to configure CORS so that client ReTool code will be calling from to interact with S3"

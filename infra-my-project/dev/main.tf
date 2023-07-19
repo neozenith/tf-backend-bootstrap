@@ -14,12 +14,14 @@ provider "aws" {
 }
 
 
-module "my_project_module" {
+module "my_token_architecture" {
+  source    = "../../modules/my_token_architecture"
+
   for_each = toset( var.instance_name_list )
   instance_name     = each.key
-  source    = "../../modules/my_project_module"
+  instance_url = var.instance_url
+  
   providers = { aws = aws }
-
   aws_profile = var.aws_profile
   environment = var.environment
   project     = var.project

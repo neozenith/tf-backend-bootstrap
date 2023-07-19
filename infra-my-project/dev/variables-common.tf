@@ -20,13 +20,6 @@ variable "aws_region" {
   nullable    = false
 }
 
-
-variable "vpc_id" {
-  description = "Target VPC for deployment. Defaults to default vpc for a region if not specified."
-  nullable    = true
-  default     = null
-}
-
 variable "environment" {
   description = "Deployment Environment AWS Account. dev/uat/prd"
   type        = string
@@ -66,10 +59,4 @@ variable "createdby" {
 
 variable "additional_tags" {
   default = { "owner" : "terraform" }
-}
-
-variable "instance_name" {
-  description = "Instance name to assist configuring which client instance this deployment of this module belongs to"
-  nullable = false
-  type = string
 }
