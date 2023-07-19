@@ -4,8 +4,8 @@ resource "aws_iam_user" "user" {
 }
 
 resource "aws_iam_access_key" "access_key" {
-  user = aws_iam_user.user.name
-  depends_on = [ aws_iam_user.user ]
+  user       = aws_iam_user.user.name
+  depends_on = [aws_iam_user.user]
 }
 
 
@@ -16,21 +16,21 @@ data "aws_s3_bucket" "target_bucket" {
 
 data "aws_iam_policy_document" "s3_role_policy_document" {
   statement {
-    effect    = "Allow"
-    actions   = ["s3:*"]
+    effect  = "Allow"
+    actions = ["s3:*"]
     resources = [
       "${data.aws_s3_bucket.target_bucket.arn}",
       "${data.aws_s3_bucket.target_bucket.arn}/*"
-      ]
+    ]
   }
-  depends_on = [ data.aws_s3_bucket.target_bucket ]
+  depends_on = [data.aws_s3_bucket.target_bucket]
 }
 
 
 resource "aws_iam_policy" "s3_service_user_policy" {
-  name   = "${var.instance_name}-s3-service-user-policy"
+  name        = "${var.instance_name}-s3-service-user-policy"
   description = "${var.instance_name} should have access to only their bucket of client data."
-  policy = data.aws_iam_policy_document.s3_role_policy_document.json
+  policy      = data.aws_iam_policy_document.s3_role_policy_document.json
 }
 
 
@@ -43,21 +43,21 @@ resource "aws_iam_policy" "s3_service_user_policy" {
 # Establish trust relationship of WHO can assume this role
 data "aws_iam_policy_document" "assume_role_policy_document" {
   statement {
-    effect    = "Allow"
-    actions   = ["sts:AssumeRole"]
-    principals  {
-      type = "AWS"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "AWS"
       identifiers = [aws_iam_user.user.arn]
     }
   }
-  depends_on = [ aws_iam_user.user ]
+  depends_on = [aws_iam_user.user]
 }
 
 # Create the role
 resource "aws_iam_role" "role" {
   name               = "${var.instance_name}-s3-service-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role_policy_document.json
-  depends_on = [ data.aws_iam_policy_document.assume_role_policy_document ]
+  depends_on         = [data.aws_iam_policy_document.assume_role_policy_document]
 }
 
 

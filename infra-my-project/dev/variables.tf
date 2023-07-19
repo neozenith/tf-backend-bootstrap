@@ -11,12 +11,12 @@ variable "vpc_id" {
 
 variable "instance_name_list" {
   default = []
-  type = list
+  type    = list(any)
 }
 
 
 variable "instance_url" {
   description = "Instance URL to configure CORS so that client ReTool code will be calling from to interact with S3"
-  nullable = false
-  type = string
+  nullable    = false
+  type        = string
 }

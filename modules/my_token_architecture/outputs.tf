@@ -4,7 +4,7 @@ output "s3_bucket" {
 }
 
 output "iam_user" {
-  value =  module.iam.iam_user
+  value = module.iam.iam_user
 }
 
 output "iam_access_key" {

@@ -1,5 +1,5 @@
 output "iam_user" {
-  value =  aws_iam_user.user
+  value = aws_iam_user.user
 }
 
 output "iam_access_key" {

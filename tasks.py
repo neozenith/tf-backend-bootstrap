@@ -49,12 +49,26 @@ def aws_region(c, env: str, target: str):
     """Extract the used AWS Region from deployment environments input tfvars."""
     return _tf_output_json(c, env, target, "aws_region")
 
+
 @task
 def credentials(c, env: str, target: str):
     """Get the AWS access keys and secrets."""
     access_keys = _tf_output_json(c, env, target, "iam_access_key")
     roles = _tf_output_json(c, env, target, "iam_role")
-    print(json.dumps({k:{"access_key_id":v["id"], "access_key_secret":v["secret"], "role_arn":roles[k]["arn"]} for k,v in access_keys.items()}))
+    buckets = _tf_output_json(c, env, target, "s3_buckets")
+    print(
+        json.dumps(
+            {
+                k: {
+                    "access_key_id": v["id"],
+                    "access_key_secret": v["secret"],
+                    "role_arn": roles[k]["arn"],
+                    "bucket": buckets[k],
+                }
+                for k, v in access_keys.items()
+            }
+        )
+    )
 
 
 @task

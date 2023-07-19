@@ -5,14 +5,14 @@
 
 variable "instance_name" {
   description = "Instance name to assist configuring which client instance this deployment of this module belongs to"
-  nullable = false
-  type = string
+  nullable    = false
+  type        = string
 }
 
 
 variable "s3_bucket" {
   description = "Name of bucket to grant access to"
-  nullable = false
-  type = string
-  
+  nullable    = false
+  type        = string
+
 }
