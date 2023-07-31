@@ -11,7 +11,9 @@ from invoke_common_tasks import ci, format, init_config, lint, typecheck  # noqa
 VALID_ENVS = ["dev", "uat", "prd"]
 TF_STATE_PATH = "infra-tf-state"
 TF_PROJECT = "infra-my-project"
+VALID_TARGETS = [TF_STATE_PATH, TF_PROJECT]
 standard_runner_kwargs = dict(pty=True, echo=True)
+CYCLE_OPTIONS = ["UP", "DOWN", "FULL"]
 
 
 def validate_env(env):
@@ -51,27 +53,6 @@ def aws_region(c, env: str, target: str):
 
 
 @task
-def credentials(c, env: str, target: str):
-    """Get the AWS access keys and secrets."""
-    access_keys = _tf_output_json(c, env, target, "iam_access_key")
-    roles = _tf_output_json(c, env, target, "iam_role")
-    buckets = _tf_output_json(c, env, target, "s3_buckets")
-    print(
-        json.dumps(
-            {
-                k: {
-                    "access_key_id": v["id"],
-                    "access_key_secret": v["secret"],
-                    "role_arn": roles[k]["arn"],
-                    "bucket": buckets[k],
-                }
-                for k, v in access_keys.items()
-            }
-        )
-    )
-
-
-@task
 def init(c, env: str, target: str):
     """Initialise Terraform for the given deployment enviroment."""
     tf(c, env, target, "init")
@@ -90,24 +71,6 @@ def apply(c, env: str, target: str):
 
 
 @task
-def create_backend(c, env: str, target: str):
-    """Create a backend block for the target deployment environment."""
-    validate_env(env)
-    target_hcl_content = 'terraform {\nbackend "pg" {}\n}'
-    target_path = Path(target) / env / "backend.tf"
-    target_path.write_text(target_hcl_content)
-
-
-@task
-def remove_backend(c, env: str, target: str):
-    """Remove a backend block for the target deployment environment."""
-    validate_env(env)
-    target_path = Path(target) / env / "backend.tf"
-    if target_path.exists():
-        os.remove(target_path)
-
-
-@task
 def migrate_state(c, env: str, target: str):
     """Migrate Terraform state to a new provider."""
     tf(c, env, target, "init -migrate-state")
@@ -119,83 +82,36 @@ def destroy(c, env: str, target: str):
     tf(c, env, target, "apply -destroy -auto-approve")
 
 
-@task
-def conn_str(c, env: str, target: str, save_shell_script: bool = False):
-    """Generate the current connection string to the database."""
-    tf_outputs = _tf_output_json(c, env, target)
-    host = tf_outputs["rds_backend"]["value"]["rds_hostname"]
-    user = tf_outputs["rds_backend"]["value"]["rds_username"]
-    db_name = tf_outputs["rds_backend"]["value"]["rds_database_name"]
 
-    # Secrets Manager - Managed Master Password rotates weekly by default.
-    rds_secret = tf_outputs["rds_backend"]["value"]["rds_managed_secret"][0]
-    connection_details = {
-        "PGUSER": user,
-        "PGHOST": host,
-        "PGDATABASE": db_name,
-        "RDS_SECRET_ARN": rds_secret["secret_arn"],
-    }
-
-    base_script = f"""
-    # !!!NOTE: DO NOT USE PG_CONN_STR - The password will often not escape correctly in commandlines!!!
-    # https://www.postgresql.org/docs/current/libpq-envars.html
-    export PGUSER="{connection_details['PGUSER']}"
-    export PGHOST="{connection_details['PGHOST']}"
-    export PGDATABASE="{connection_details['PGDATABASE']}"
-    export RDS_SECRET_ARN="{connection_details['RDS_SECRET_ARN']}"
-    export AWS_REGION="{aws_region(c,env, target)}"
-    export AWS_PROFILE="{aws_profile(c, env, target)}"
-    export PGPASSWORD="$(aws secretsmanager get-secret-value --secret-id $RDS_SECRET_ARN --profile $AWS_PROFILE --region $AWS_REGION --output json | jq -r .SecretString | jq -r .password)"
+@task(iterable=['env_list','target_list'])
+def cycle(c, env_list = None, target_list = None, cycle = "FULL"):
+    """Run through a IaC cycle setting up and tearing down for all envs of a subset of the combinations.
+    
+    env_list - Default is to perform the same cycle on envs unless a single env name or a list of env names provided.
+    target_list - Default is to perform the same cycle on all targets unless a single target or a list of targets provided.
+    cycle - A cycle is either "FULL" (default) which will perform an "UP" and then a "DOWN". Or you could specify only one half of the cycle.
     """
+    if not env_list:
+        env_list = VALID_ENVS
+    elif type(env_list) == str:
+        env_list = [env_list]
 
-    print(base_script)
-    if save_shell_script:
-        path = Path(f"pgconstr-{target}-{env}.sh")
-        path.write_text(base_script)
+    if not target_list:
+        target_list = VALID_TARGETS
+    elif type(target_list) == str:
+        target_list = [target_list]
 
-    return connection_details
+    for target in target_list:
+        for env in env_list:
+            if cycle in ["UP", "FULL"]:
+                init(c, env, target)
+                apply(c, env, target)
 
-
-def _get_secret_value(secret_arn, profile, region):
-    """Fetch an AWS secret."""
-    # Password is managed by AWS and rotated weekly
-    # So we need to securely retrieve it and compose the current connection string
-    session = boto3.session.Session(profile_name=profile)
-    client = session.client(
-        service_name="secretsmanager",
-        region_name=region,
-    )
-    secret = client.get_secret_value(SecretId=secret_arn)
-    return json.loads(secret["SecretString"])["password"]
-
-
-@task
-def bootstrap(c, env: str):
-    """Bootsrap and environment."""
-    target = TF_STATE_PATH
-    init(c, env, target)
-    apply(c, env, target)
-    connection_details = conn_str(c, env, target, save_shell_script=True)
-    connection_details["PGPASSWORD"] = _get_secret_value(
-        secret_arn=connection_details["RDS_SECRET_ARN"],
-        profile=aws_profile(c, env, target),
-        region=aws_region(c, env, target),
-    )
-    create_backend(c, env, target)
-    migrate_state(c, env, target)
-
-
-@task
-def unstrap(c, env: str):
-    """Tear down and clean up the whole project."""
-    target = TF_STATE_PATH
-    # Remove reference that the backend is `pg` so it defaults to `local` again
-    remove_backend(c, env, target)
-    # Migrate from `pg` to `local`
-    migrate_state(c, env, target)
-    # Using the state in local, now tear it down.
-    destroy(c, env, target)
-
+    for target in target_list[::-1]:
+        for env in env_list:
+            if cycle in ["DOWN", "FULL"]:
+                destroy(c, env, target)
+    
 
 ########################### MISCELLANEOUS ########################### # noqa
 

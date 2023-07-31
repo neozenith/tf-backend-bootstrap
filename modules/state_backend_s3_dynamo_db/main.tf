@@ -2,7 +2,7 @@
 resource "aws_s3_bucket" "main_bucket" {
 
   bucket        = "terraform-state-${var.project}-${var.environment}"
-  force_destroy = var.environment == "dev"
+  force_destroy = true # var.environment == "dev"
   tags = {
     Name       = "${var.project} S3 Storage"
   }
@@ -44,6 +44,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
     ]
   })
   depends_on = [aws_s3_bucket.main_bucket]
+}
+
+resource "aws_s3_bucket_versioning" "main_bucket" {
+  bucket = aws_s3_bucket.main_bucket.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
 
 
