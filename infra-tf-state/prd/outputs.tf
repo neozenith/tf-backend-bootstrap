@@ -7,7 +7,3 @@ output "aws_region" {
   value      = var.aws_region
   depends_on = [var.aws_region]
 }
-
-output "rds_backend" {
-  value = module.state_backend_rds
-}

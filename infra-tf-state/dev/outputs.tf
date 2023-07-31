@@ -8,6 +8,9 @@ output "aws_region" {
   depends_on = [var.aws_region]
 }
 
-output "rds_backend" {
-  value = module.state_backend_rds
+output "backend_details" {
+  value = {
+    s3_bucket = module.state_backend_s3_dynamo_db.s3_bucket.bucket
+    dynamodb_table = module.state_backend_s3_dynamo_db.dynamodb_table
+  }
 }
