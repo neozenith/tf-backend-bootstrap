@@ -73,7 +73,7 @@ resource "aws_dynamodb_table" "terraform_state_lock" {
   }
 
   point_in_time_recovery {
-    enabled = false # var.dynamodb_point_in_time_recovery
+    enabled = true # var.dynamodb_point_in_time_recovery
   }
 
   # tags = var.dynamodb_table_tags
