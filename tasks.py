@@ -5,7 +5,6 @@ import time
 from pathlib import Path
 
 # Third Party
-import boto3
 from invoke import task
 from invoke_common_tasks import ci, format, init_config, lint, typecheck  # noqa
 
@@ -99,7 +98,7 @@ def cycle(
     reconfigure_backend=False,
     local_only=False,
     sleep_sec=20,
-):
+):  # noqa: C901
     """Run through a IaC cycle setting up and tearing down for all envs of a subset of the combinations.
 
     env_list - Default is to perform the same cycle on envs unless a single env name or a list of env names provided.
