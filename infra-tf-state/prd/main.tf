@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 1.5.0"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -22,5 +23,8 @@ module "state_backend_s3_dynamo_db" {
   environment = var.environment
   project     = var.project
   team        = var.team
+
+  trusted_terraform_identity_arns = var.trusted_terraform_identity_arns
+
 
 }

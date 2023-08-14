@@ -3,6 +3,7 @@
 setup.sh
 **/*/pgconstr*.sh
 pgconstr*.sh
+**/*/.aws/*
 
 # Terraform
 *.tfvars

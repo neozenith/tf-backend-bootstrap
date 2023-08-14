@@ -1,6 +1,7 @@
 # Standard Library
 import json
 import os
+import time
 from pathlib import Path
 
 # Third Party
@@ -77,16 +78,30 @@ def migrate_state(c, env: str, target: str):
 
 
 @task
+def reconfigure(c, env: str, target: str):
+    """Migrate Terraform state to a new provider."""
+    tf(c, env, target, "init -reconfigure")
+
+
+@task
 def destroy(c, env: str, target: str):
     """Apply Terraform state change for the given deployment enviroment."""
     tf(c, env, target, "apply -destroy -auto-approve")
 
 
-
-@task(iterable=['env_list','target_list'])
-def cycle(c, env_list = None, target_list = None, cycle = "FULL"):
+@task(iterable=["env_list", "target_list"])
+def cycle(
+    c,
+    env_list=None,
+    target_list=None,
+    cycle="FULL",
+    migrate_backend=False,
+    reconfigure_backend=False,
+    local_only=False,
+    sleep_sec=20,
+):
     """Run through a IaC cycle setting up and tearing down for all envs of a subset of the combinations.
-    
+
     env_list - Default is to perform the same cycle on envs unless a single env name or a list of env names provided.
     target_list - Default is to perform the same cycle on all targets unless a single target or a list of targets provided.
     cycle - A cycle is either "FULL" (default) which will perform an "UP" and then a "DOWN". Or you could specify only one half of the cycle.
@@ -104,14 +119,69 @@ def cycle(c, env_list = None, target_list = None, cycle = "FULL"):
     for target in target_list:
         for env in env_list:
             if cycle in ["UP", "FULL"]:
-                init(c, env, target)
+                # INIT
+                if reconfigure_backend:
+                    reconfigure(c, env, target)
+                elif migrate_backend:
+                    migrate_state(c, env, target)
+                else:
+                    init(c, env, target)
+
+                # APPLY
                 apply(c, env, target)
+                if not local_only and target == TF_STATE_PATH:
+                    create_backend(c, env)
+                    print(f"Sleeping for {sleep_sec} seconds to ensure roles are created correctly...")
+                    time.sleep(sleep_sec)
+                    reconfigure(c, env, TF_PROJECT)
 
     for target in target_list[::-1]:
         for env in env_list:
             if cycle in ["DOWN", "FULL"]:
                 destroy(c, env, target)
-    
+                if not local_only and target == TF_STATE_PATH:
+                    remove_backend(c, env)
+                    reconfigure(c, env, TF_PROJECT)
+
+
+@task
+def create_backend(c, env: str):
+    """Using the outputs of infra-tf-state create a backend.tf for infra-my-project."""
+    validate_env(env)
+    region = _tf_output_json(c, env, TF_STATE_PATH, "aws_region")
+    backend = _tf_output_json(c, env, TF_STATE_PATH, "backend_details")
+    credentials_root_path = str(Path(TF_STATE_PATH) / env)
+
+    target_hcl_content = f"""
+terraform {{
+  backend "s3" {{
+    shared_credentials_file = "../../{credentials_root_path}/{backend['terraform_user_credentials']['credentials_file']}"
+
+    profile = "{backend['terraform_user_credentials']['profile_name']}"
+    region = "{region}"
+    role_arn = "{backend['role_arn']}"
+
+    bucket = "{backend['s3_bucket']}"
+    key    = "{backend['s3_key']}"
+    encrypt = true
+
+    dynamodb_table = "{backend['dynamodb_table']}"
+  }}
+}}
+    """
+
+    target_path = Path(TF_PROJECT) / env / "backend.tf"
+    target_path.write_text(target_hcl_content)
+
+
+@task
+def remove_backend(c, env: str):
+    """Remove a backend block for the target deployment environment."""
+    validate_env(env)
+    target_path = Path(TF_PROJECT) / env / "backend.tf"
+    if target_path.exists():
+        os.remove(target_path)
+
 
 ########################### MISCELLANEOUS ########################### # noqa
 

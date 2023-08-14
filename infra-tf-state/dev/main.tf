@@ -24,4 +24,7 @@ module "state_backend_s3_dynamo_db" {
   project     = var.project
   team        = var.team
 
+  trusted_terraform_identity_arns = var.trusted_terraform_identity_arns
+
+
 }
